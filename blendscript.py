@@ -76,10 +76,14 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
         obj.name="Mandible"
 #        # Set the material diffuse color
 #        obj.material_slots[0].material.diffuse_color = (0.0, 0.0, 1.0, 1.0)     
-        mat = bpy.data.materials.new(name="Material")
+        mat = bpy.data.materials.new(name="Translucent")
         mat.diffuse_color = (1,1,1,0.2) 
-        bpy.ops.object.material_slot_add()
+        obj.data.materials.append(mat)
+#        obj.material_slots[0].material=mat
         obj.active_material = mat
+        mat2 = bpy.data.materials.new(name="Opaque")
+        mat2.diffuse_color = (1,1,1,1) 
+#        obj.material_slots[1].material=mat2
         
         
     def execute(self, context): 
@@ -108,11 +112,12 @@ def add_mandible_button(self, context):
 
 # This allows you to right click on a button and link to documentation
 def add_object_manual_map():
-    url_manual_prefix = "https://github.com/MatthewMong/DentalImplants"
+    url_manual_prefix = "https://github.com/MatthewMong/"
     url_manual_mapping = (
-        ("bpy.ops.mesh.add_object", "scene_layout/object/types.html"),
+        ("bpy.ops.mesh.add_object", "DentalImplants"),
     )
     return url_manual_prefix, url_manual_mapping
+
 
 
 def register():
