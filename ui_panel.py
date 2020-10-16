@@ -22,11 +22,10 @@ class InfoPanel(bpy.types.Panel):
         z=math.cos(euler[0])*math.cos(euler[1])
         y=math.sin(euler[0])*math.cos(euler[1])
         x=math.sin(euler[1])
-        vector=(-1*x,y,-1*z)
+        vector=(-1*x,-1*y,-1*z)
+        print(vector)
         return(vector)
-#        vec = Vector((x, y, z)).normalize()
-#        return(vec.negate())
-#        return((0,0,-1))
+
     """
     Calculates distance between two points which are represented as vectors
     Note: minimal inaccuracy due to fp math
