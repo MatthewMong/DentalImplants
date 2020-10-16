@@ -21,7 +21,9 @@ from bpy.props import StringProperty, BoolProperty
 from bpy_extras.io_utils import ImportHelper 
 from bpy.types import Operator 
 
-
+"""
+Main Class for importing Dental Implant Mesh
+"""
 class OBJECT_OT_add_object(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_object"
@@ -55,7 +57,10 @@ class OBJECT_OT_add_object(Operator, AddObjectHelper):
         
         return {'FINISHED'}
 
-
+"""
+Main Class for Importing Mandible
+Note: uses built in blender file browser
+"""
 class OT_TestOpenFilebrowser(Operator, ImportHelper): 
     bl_idname = "io.importobj"  
     bl_label = "Import Mandible"
@@ -70,22 +75,26 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
         description='Do a thing with the file you\'ve selected', 
         default=True, 
     ) 
+    """
+    Import Mandible STL and apply materials for transparency options
+    """
     def add_mandible(self, context):
         bpy.ops.import_mesh.stl(filepath=self.location)
         obj = bpy.context.object
-        obj.name="Mandible"
-#        # Set the material diffuse color
-#        obj.material_slots[0].material.diffuse_color = (0.0, 0.0, 1.0, 1.0)     
+        obj.name="Mandible" 
         mat = bpy.data.materials.new(name="Translucent")
+#        last number in array defines alpha which is how we control transparency
         mat.diffuse_color = (1,1,1,0.2) 
         obj.data.materials.append(mat)
-#        obj.material_slots[0].material=mat
         obj.active_material = mat
         mat2 = bpy.data.materials.new(name="Opaque")
         mat2.diffuse_color = (1,1,1,1) 
-#        obj.material_slots[1].material=mat2
         
-        
+    """
+    Driver function for class, opens file browser (limited to STL files)
+    triggers add_mandible function and frames mandible
+    Note: sometimes the frame will swap back if you tab through layouts im not sure why
+    """
     def execute(self, context): 
         """Do something with the selected file(s).""" 
         filename, extension = os.path.splitext(self.filepath)
@@ -96,8 +105,9 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
         bpy.ops.view3d.localview(frame_selected=True)
         return {'FINISHED'} 
 
-# Registration
-
+"""
+Some Helper functions, mostly button operators
+"""
 def add_object_button(self, context):
     self.layout.operator(
         OBJECT_OT_add_object.bl_idname,
@@ -119,7 +129,9 @@ def add_object_manual_map():
     return url_manual_prefix, url_manual_mapping
 
 
-
+"""
+Boilerplate add and remove buttons
+"""
 def register():
     bpy.utils.register_class(OBJECT_OT_add_object)
     bpy.utils.register_class(OT_TestOpenFilebrowser)

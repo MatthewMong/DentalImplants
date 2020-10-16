@@ -1,8 +1,11 @@
 import bpy
 from math import pi
 from mathutils import Vector
-
-
+import math
+"""
+Main UI component
+Data->Properties->Object Properties->Dental Implant
+"""
 class InfoPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
     bl_label = "Dental Implant"
@@ -10,18 +13,44 @@ class InfoPanel(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "object"
-    
-    def distance_vec(point1: Vector, point2: Vector) -> float:
-        return (point2 - point1).length
-    
+#    Helper functions for the class
+    """
+    Convert from radians to unit vector, someone please look over this im bad at math
+    """
+    def euler_to_vector(obj):
+        euler=obj.rotation_euler
+        z=math.cos(euler[0])*math.cos(euler[1])
+        y=math.sin(euler[0])*math.cos(euler[1])
+        x=math.sin(euler[1])
+        vector=(-1*x,y,-1*z)
+        return(vector)
+#        vec = Vector((x, y, z)).normalize()
+#        return(vec.negate())
+#        return((0,0,-1))
+    """
+    Calculates distance between two points which are represented as vectors
+    Note: minimal inaccuracy due to fp math
+    """
+    def distance_vec(point1, point2) -> float:
+        ret = "?"
+        if (point1 is not None )and (point2 is not None):
+            ret = (point2 - point1).length
+        return ret
+    """
+    takes euler and returns degree
+    Note: This specifically returns an angle that is =< 180 and will return 
+    positive and negative numbers for orientation sake
+    """
     def eulerToDegree(euler):
         euler=euler%(2*pi)
         if euler >pi:
             euler=euler-(2*pi)
         return (euler/(2*pi))*360
-#        if euler >=pi:
-#            euler=(pi)-euler
-#        return ( (euler % (pi)) / (2 * pi) ) * 360
+
+    """
+    Basic convenience function to calculate average of an array
+    Note: we may want to ask Wong if she wants mean or median
+    """
     def average(array, axis):
         sum = 0
         for obj in array:
@@ -29,26 +58,41 @@ class InfoPanel(bpy.types.Panel):
         sum=sum/len(array)
         return sum
     
+    """
+    Get distance from center of implant to bottom of mandible
+    Note: This is optimized for cpu usage instead of RAM
+    Consistently send a ray cast down until an object is hit, and then send another ray cast
+    repeat until no object is hit, we take the last raycast spot as the bottom of mandible
     
+    Bug: returns 0 when object is being moved not sure why ye
+    """
     def distancecast(obj, context):
 #        find distance from implant to bottom of mandible, 
-#        note that (0,0,-1) vector is temp until we can get orientation of implant
+#        note that it currently lists depth of 2.64 because thats the bottom of the screw
         scn = context.scene
         Flag = True
         location=obj.location
-        print("break")
-        result, location, normal, index, object, matrix=scn.ray_cast(context.window.view_layer,(location[0],location[1],location[2]),(0,0,-1))
+        result, location, normal, index, object, matrix=scn.ray_cast(context.window.view_layer,(location[0],location[1],location[2]),InfoPanel.euler_to_vector(obj))
+        actuallocation = location
         point1 = location
         point2 = location
         int=0
         if result is True:
-            while result is True and (int<9):
-                actuallocation=location
-                result, location, normal, index, object, matrix=scn.ray_cast(context.window.view_layer,(location[0],location[1],location[2]-0.1),(0,0,-1))            
+#            the int < 10 is just to prevent an infinite loop/crash if theres a really nasty mandible
+            while result is True and (int<10):
+                try:
+                    actuallocation=location
+                    result, location, normal, index, object, matrix=scn.ray_cast(context.window.view_layer,(location[0],location[1],location[2]-0.1),InfoPanel.euler_to_vector(obj))            
+                except:
+                    print("error")
                 int=int + 1
+        if int <= 1:
+            actuallocation = None
         return actuallocation
 
-        
+    """
+    Main Function for UI Panel
+    """
     def draw(self, context):
         layout = self.layout
         obj = context.object
@@ -69,12 +113,17 @@ class InfoPanel(bpy.types.Panel):
             row7=layout.row()
             row7.label(text="Z deviance is: " + str(abs(InfoPanel.eulerToDegree(obj.rotation_euler[2])-InfoPanel.average(implants, 2))))
             row8=layout.row()
-            row8.label(text="depth: "+str(InfoPanel.distance_vec(obj.location,InfoPanel.distancecast(obj, context))))
+            row8.label(text="depth: "+str(InfoPanel.distance_vec(obj.location,InfoPanel.distancecast(obj, context) )))
         layout.label(text="Appearance")
         row = layout.row(align=True)
         row.operator("object.simple_operator")
             
-            
+"""
+Transparency Button, right now it is hardcoded to mess with Mandible but should be changed to take 
+a mesh of our choosing
+Works by swapping the currently applied material to the mesh, note that the materials are defined on 
+mandible mesh import
+""" 
 class SimpleOperator(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.simple_operator"
@@ -93,7 +142,11 @@ class SimpleOperator(bpy.types.Operator):
             obj.active_material=bpy.data.materials["Opaque"]
         return {'FINISHED'}
 
+"""
+Functions to add or remove to UI
+"""
 def register():
+    print("new test")
     bpy.utils.register_class(SimpleOperator)
     bpy.utils.register_class(InfoPanel)
 
