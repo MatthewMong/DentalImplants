@@ -12,6 +12,7 @@ bl_info = {
 
 
 import bpy
+import re
 from bpy.types import Operator
 from bpy.props import FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
@@ -36,11 +37,19 @@ class OBJECT_OT_add_object(Operator, AddObjectHelper):
         subtype='TRANSLATION',
         description="scaling",
     )
+    def distance_vec(point1: Vector, point2: Vector) -> float:
+        """Calculate distance between two points.""" 
+        return (point2 - point1).length
+    
+    
     def add_object(self, context):
+        distances=[]
+        keystone=1024
+        name=None
         scale_x = self.scale.x
         scale_y = self.scale.y
 #       get dental implant stl from local files, this should be changed to a proper file within the module
-        bpy.ops.import_mesh.stl(filepath=r"C:\Users\ascar\Downloads\dental-implant-9.snapshot.1\Tornillo_imp.STL")
+        bpy.ops.import_mesh.stl(filepath=r"C:\Users\ascar\OneDrive\Desktop\DentalImplants\Pipe.STL")
         obj = bpy.context.object
 #       set name of object
         obj.name="Dental Implant"
@@ -49,8 +58,26 @@ class OBJECT_OT_add_object(Operator, AddObjectHelper):
         scene=bpy.context.scene
 #       translate implant to the 3d cursor
         obj.matrix_world.translation = scene.cursor.location
-        bpy.context.scene.transform_orientation_slots[1].type = 'LOCAL'
+        bpy.ops.transform.select_orientation(orientation='LOCAL')
+        obj.constraints.new(type="SHRINKWRAP")
+        for object in bpy.data.objects:
+            if "Dental Implant" not in object.name:
+                objloc=object.closest_point_on_mesh(scene.cursor.location)
+                print(objloc)
+                print(scene.cursor.location)
+                dist=OBJECT_OT_add_object.distance_vec(objloc[1], scene.cursor.location)
+                distances.append([object.name, dist])
+        for pair in distances:
+            if pair[1]<keystone:
+                keystone=pair[1]
+                name=pair[0]
+        obj.constraints["Shrinkwrap"].target=bpy.data.objects[name]
+        obj.constraints["Shrinkwrap"].shrinkwrap_type = 'PROJECT'
+        obj.constraints["Shrinkwrap"].use_project_opposite=True
+        obj.constraints["Shrinkwrap"].project_axis_space = 'WORLD'
 
+        
+        
     def execute(self, context):
 
         OBJECT_OT_add_object.add_object(self, context)
@@ -66,7 +93,7 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
     bl_label = "Import Mandible"
     location = ""
     filter_glob: StringProperty( 
-        default='*.stl', 
+        default='folder', 
         options={'HIDDEN'} 
     ) 
     
@@ -74,21 +101,34 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
         name='Do a thing', 
         description='Do a thing with the file you\'ve selected', 
         default=True, 
-    ) 
+    )
+    
+    def clean(self, context):
+        for o in bpy.context.scene.objects:
+            o.select_set(True)
+        bpy.ops.object.delete()
     """
     Import Mandible STL and apply materials for transparency options
     """
-    def add_mandible(self, context):
-        bpy.ops.import_mesh.stl(filepath=self.location)
+    def add_mandible(self, context, mat, location):
+        bpy.ops.import_mesh.stl(filepath=location)
         obj = bpy.context.object
-        obj.name="Mandible" 
-        mat = bpy.data.materials.new(name="Translucent")
-#        last number in array defines alpha which is how we control transparency
-        mat.diffuse_color = (1,1,1,0.2) 
+        obj.name="Mandible"
         obj.data.materials.append(mat)
         obj.active_material = mat
-        mat2 = bpy.data.materials.new(name="Opaque")
-        mat2.diffuse_color = (1,1,1,1) 
+    def add_maxilla(self, context, mat, location):
+        bpy.ops.import_mesh.stl(filepath=location)
+        obj = bpy.context.object
+        obj.name="Maxilla"
+        obj.data.materials.append(mat)
+        obj.active_material = mat
+    
+    def add_resection(self, context, mat, location):
+        bpy.ops.import_mesh.stl(filepath=location)
+        obj = bpy.context.object
+        obj.name="Resection"
+        obj.data.materials.append(mat)
+        obj.active_material = mat
         
     """
     Driver function for class, opens file browser (limited to STL files)
@@ -96,12 +136,24 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
     Note: sometimes the frame will swap back if you tab through layouts im not sure why
     """
     def execute(self, context): 
-        """Do something with the selected file(s).""" 
+        """Do something with the selected file(s)."""
+        OT_TestOpenFilebrowser.clean(self, context)
+        mat = bpy.data.materials.new(name="Translucent")
+#        last number in array defines alpha which is how we control transparency
+        mat.diffuse_color = (1,1,1,0.8) 
+        mat2 = bpy.data.materials.new(name="Opaque")
+        mat2.diffuse_color = (1,1,1,1)  
         filename, extension = os.path.splitext(self.filepath)
         print('Selected file:', self.filepath)
         self.location=self.filepath
-        print(self.location)
-        OT_TestOpenFilebrowser.add_mandible(self, context)
+        for entry in os.scandir(self.location):
+            if entry.is_file() and re.search("mandible",entry.name, re.IGNORECASE):
+                OT_TestOpenFilebrowser.add_mandible(self, context, mat2, self.location+entry.name)
+            elif entry.is_file() and re.search("resection",entry.name, re.IGNORECASE):
+                OT_TestOpenFilebrowser.add_resection(self, context, mat, self.location+entry.name)
+            elif entry.is_file() and re.search("maxilla",entry.name, re.IGNORECASE):
+                OT_TestOpenFilebrowser.add_maxilla(self, context, mat2, self.location+entry.name)            
+        bpy.ops.object.select_all(action='SELECT')
         bpy.ops.view3d.localview(frame_selected=True)
         return {'FINISHED'} 
 
