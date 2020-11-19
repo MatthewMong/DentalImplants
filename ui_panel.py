@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Dental Implants",
     "author": "Matthew Mong",
-    "version": (0, 1),
+    "version": (0, 2),
     "blender": (2, 90, 1),
     "location": "View3D > Add > Mesh > New Object",
     "description": "Dental Implants",
