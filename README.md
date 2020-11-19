@@ -29,6 +29,7 @@ Implants can be moved and rotated by clicking the Move and Rotate tools located 
 
 Additional Actions and Data can be accessed via the Object Properties panel, the two important categories are "Dental Implant" and "Implant Orientations"
 ![Click 3D Cursor](https://i.imgur.com/jrh9BEW.png "Click 3D Cursor")
+
 *Note: you may have to scroll down to see these categories, you can move them to the top by dragging up on the braille-like icon*
 ### Dental Implant
 This provides additional commands such as changing the transparency, duplicating implants, saving implants, and importing teeth
@@ -45,5 +46,7 @@ Original Tooth models from
 Blender 2.90.1 obtained from
 [Blender Foundation](https://www.blender.org/)
 
+Images hosted at Imgur
+[Imgur](https://imgur.com/)
 
 
