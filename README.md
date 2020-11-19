@@ -3,7 +3,7 @@ Blender plugin for placing dental implants
 
 ## Installation
 1. Download the Zip file of this code from this repository
-![Download Code from Github](https://i.imgur.com/Vw9WkPF.png "Download Code")
+![Download Code from Github](https://i.imgur.com/Vw9WkPF.png "Download Code" =300x300)
 2. Extract this file to a location
 3. Open Blender Note: This has only been tested on Blender 2.90.1
 4. Edit user Preferences
