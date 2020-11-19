@@ -37,6 +37,7 @@ class InfoPanel(bpy.types.Panel):
     """
     Convert from radians to unit vector, someone please look over this im bad at math
     """
+
     def euler_to_vector(obj):
         euler=obj.rotation_euler
         z=math.cos(euler[0])*math.cos(euler[1])
@@ -64,7 +65,7 @@ class InfoPanel(bpy.types.Panel):
         euler=euler%(2*pi)
         if euler >pi:
             euler=euler-(2*pi)
-        return (euler/(2*pi))*360
+        return str(round(((euler/(2*pi))*360),2))
 
     """
     Basic convenience function to calculate average of an array
@@ -129,36 +130,44 @@ class InfoPanel(bpy.types.Panel):
     """
     def draw(self, context):
         layout = self.layout
-        obj = context.active_object
-        layout.label(text="Appearance")
+        layout.label(text="Active object is: " + context.active_object.name)
         brow = layout.row(align=True)
         brow.operator("object.simple_operator")
         brow3 = layout.row(align=True)
         brow3.operator("object.save")
-        if "Dental Implant" in obj.name:
-            implants = [obj for obj in context.scene.objects if obj.name.startswith("Dental Implant")]
-            row1 = layout.row()
-            row1.label(text="Active object is: " + obj.name)
-#            row2 = layout.row()
-#            row2.label(text="X orientation is: " + str(InfoPanel.eulerToDegree(obj.rotation_euler[0])))
-#            row3 = layout.row()
-#            row3.label(text="Y orientation is: " + str(InfoPanel.eulerToDegree(obj.rotation_euler[1])))
-#            row4 = layout.row()
-#            row4.label(text="Z orientation is: " + str(InfoPanel.eulerToDegree(obj.rotation_euler[2])))
-            row5 = layout.row()
-            row5.label(text="X deviance is: " + str(abs(InfoPanel.eulerToDegree(obj.rotation_euler[0])-InfoPanel.average(implants, 0))))
-            row6=layout.row()
-            row6.label(text="Y deviance is: " + str(abs(InfoPanel.eulerToDegree(obj.rotation_euler[1])-InfoPanel.average(implants, 1))))
-            row7=layout.row()
-            row7.label(text="Z deviance is: " + str(abs(InfoPanel.eulerToDegree(obj.rotation_euler[2])-InfoPanel.average(implants, 2))))
-#            row8=layout.row()
-#            row8.label(text="depth: "+str(InfoPanel.distance_vec(obj.location,InfoPanel.distancecast(obj, context) )))
-            layout.label(text="Distances")
-            for distance in InfoPanel.horizontal_distance(obj, context, implants):
-                row9=layout.row()
-                row9.label(text=distance[0]+", "+str(distance[1])+"mm")
-            brow2 = layout.row(align=True)
-            brow2.operator("object.duplicate")
+        brow2 = layout.row(align=True)
+        brow2.operator("object.duplicate")
+        brow4= layout.row(align=True)
+        brow4.operator("object.importtooth")
+        layout.row(align=True)
+        layout.operator("OBJECT_PT_select")
+
+class ObjectSelectPanel(bpy.types.Panel):
+    bl_idname = "OBJECT_PT_select"
+    bl_label = ""
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return (context.object is not None)
+
+    def draw_header(self, context):
+        layout = self.layout
+        layout.label(text="Implant Orientations")
+
+    def draw(self, context):
+        implants = [obj for obj in context.scene.objects if obj.name.startswith("Dental Implant")]
+        layout = self.layout
+        obj = bpy.context.object
+        for implant in implants:
+            box = layout.box()
+            box.prop(implant, "rotation_euler", text=implant.name)
+            if "Dental Implant" in obj.name:
+                box.label(text="Difference to current implant:")
+                box.label(text="X:"+InfoPanel.eulerToDegree(implant.rotation_euler[0]-obj.rotation_euler[0])+" Y:"+InfoPanel.eulerToDegree(implant.rotation_euler[1]-obj.rotation_euler[1])+" Z:"+InfoPanel.eulerToDegree(implant.rotation_euler[2]-obj.rotation_euler[2]))
 """
 Main Class for importing Dental Implant Mesh
 """
@@ -360,6 +369,25 @@ class Save(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             self.filepath=self.filepath+".stl"
         bpy.ops.export_mesh.stl(filepath=self.filepath,check_existing=True, use_selection=True)
         return {'FINISHED'}
+    
+class ImportTooth(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
+    """Tooltip"""
+    bl_idname = "object.importtooth"
+    bl_label = "Import Tooth"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        bpy.ops.import_mesh.stl(filepath=self.filepath,filter_glob="*.stl")
+        obj = bpy.context.selected_objects[0]
+        obj.data.materials.append(bpy.data.materials.get("Opaque"))
+        obj.active_material=bpy.data.materials.get("Opaque")
+        bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
+        scene=bpy.context.scene
+        obj.matrix_world.translation = scene.cursor.location
+        return {'FINISHED'}
 """
 Some Helper functions, mostly button operators
 """
@@ -389,8 +417,10 @@ Functions to add or remove to UI
 def register():
     print("new test")
     bpy.utils.register_class(SimpleOperator)
+    bpy.utils.register_class(ObjectSelectPanel)
     bpy.utils.register_class(Duplicate)
     bpy.utils.register_class(Save)
+    bpy.utils.register_class(ImportTooth)
     bpy.utils.register_class(InfoPanel)
     bpy.utils.register_class(OBJECT_OT_add_object)
     bpy.utils.register_class(OT_TestOpenFilebrowser)
@@ -401,8 +431,10 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(SimpleOperator)
+    bpy.utils.unregister_class(ObjectSelectPanel)
     bpy.utils.unregister_class(Duplicate)
     bpy.utils.unregister_class(Save)
+    bpy.utils.unregister_class(ImportTooth)
     bpy.utils.unregister_class(InfoPanel)
     bpy.utils.unregister_class(OBJECT_OT_add_object)
     bpy.utils.unregister_class(OT_TestOpenFilebrowser)
