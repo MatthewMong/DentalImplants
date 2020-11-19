@@ -46,7 +46,6 @@ Original Tooth models from
 Blender 2.90.1 obtained from
 [Blender Foundation](https://www.blender.org/)
 
-Images hosted at Imgur
-[Imgur](https://imgur.com/)
+Images hosted at [Imgur](https://imgur.com/)
 
 
