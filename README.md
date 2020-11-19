@@ -34,6 +34,7 @@ Additional Actions and Data can be accessed via the Object Properties panel, the
 ### Dental Implant
 This provides additional commands such as changing the transparency, duplicating implants, saving implants, and importing teeth
 
+*Note you can make an item invisible/hide it via the eye icon in the top right panel*
 Import Tooth will open a file browser, all teeth files are stored in the STLTeeth folder included with this addon.
 
 ### Implant Orientations
