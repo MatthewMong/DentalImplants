@@ -139,8 +139,11 @@ class InfoPanel(bpy.types.Panel):
         brow2.operator("object.duplicate")
         brow4= layout.row(align=True)
         brow4.operator("object.importtooth")
-        layout.row(align=True)
-        layout.operator("OBJECT_PT_select")
+#        brow5 = layout.row(align = True)
+#        brow5.operator("mesh.add_object")
+#        if len([obj for obj in context.scene.objects if obj.name.startswith("Dental Implant")]) >0:
+#            layout.row(align=True)
+#            layout.operator("OBJECT_PT_select")
 
 class ObjectSelectPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_select"
@@ -174,7 +177,7 @@ Main Class for importing Dental Implant Mesh
 class OBJECT_OT_add_object(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_object"
-    bl_label = "Add Mesh Object"
+    bl_label = "Add Dental Implant"
     bl_options = {'REGISTER', 'UNDO'}
 
     scale: FloatVectorProperty(
@@ -259,20 +262,20 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
     """
     def add_mandible(self, context, mat, location):
         bpy.ops.import_mesh.stl(filepath=location)
-        obj = bpy.context.object
+        obj = bpy.context.selected_objects[0]
         obj.name="Mandible"
         obj.data.materials.append(mat)
         obj.active_material = mat
     def add_maxilla(self, context, mat, location):
         bpy.ops.import_mesh.stl(filepath=location)
-        obj = bpy.context.object
+        obj = bpy.context.selected_objects[0]
         obj.name="Maxilla"
         obj.data.materials.append(mat)
         obj.active_material = mat
     
     def add_resection(self, context, mat, location):
         bpy.ops.import_mesh.stl(filepath=location)
-        obj = bpy.context.object
+        obj = bpy.context.selected_objects[0]
         obj.name="Resection"
         obj.data.materials.append(mat)
         obj.active_material = mat
@@ -285,6 +288,9 @@ class OT_TestOpenFilebrowser(Operator, ImportHelper):
     def execute(self, context): 
         """Do something with the selected file(s)."""
         OT_TestOpenFilebrowser.clean(self, context)
+        for material in bpy.data.materials:
+            material.user_clear()
+            bpy.data.materials.remove(material)
         mat = bpy.data.materials.new(name="Translucent")
 #        last number in array defines alpha which is how we control transparency
         mat.diffuse_color = (1,1,1,0.8) 
@@ -374,6 +380,7 @@ class ImportTooth(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     """Tooltip"""
     bl_idname = "object.importtooth"
     bl_label = "Import Tooth"
+    bl_options = {'UNDO'}
     
     @classmethod
     def poll(cls, context):
@@ -416,8 +423,8 @@ Functions to add or remove to UI
 """
 def register():
     print("new test")
-    bpy.utils.register_class(SimpleOperator)
     bpy.utils.register_class(ObjectSelectPanel)
+    bpy.utils.register_class(SimpleOperator)
     bpy.utils.register_class(Duplicate)
     bpy.utils.register_class(Save)
     bpy.utils.register_class(ImportTooth)
@@ -425,8 +432,8 @@ def register():
     bpy.utils.register_class(OBJECT_OT_add_object)
     bpy.utils.register_class(OT_TestOpenFilebrowser)
     bpy.utils.register_manual_map(add_object_manual_map)
-    bpy.types.VIEW3D_MT_mesh_add.append(add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.append(add_mandible_button)
+    bpy.types.VIEW3D_MT_editor_menus.append(add_mandible_button)
+    bpy.types.VIEW3D_MT_editor_menus.append(add_object_button)
 
 
 def unregister():
@@ -439,8 +446,8 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_add_object)
     bpy.utils.unregister_class(OT_TestOpenFilebrowser)
     bpy.utils.unregister_manual_map(add_object_manual_map)
-    bpy.types.VIEW3D_MT_mesh_add.remove(add_object_button)
-    bpy.types.VIEW3D_MT_mesh_add.remove(add_mandible_button)
+    bpy.types.VIEW3D_MT_editor_menus.remove(add_object_button)
+    bpy.types.VIEW3D_MT_editor_menus.remove(add_mandible_button)
 
 
 if __name__ == "__main__":
